@@ -25,11 +25,11 @@ bluetooth.advertise_service(server_sock, "SampleServer", service_id=uuid,
                             )
 
 
-while True:
-    print("Waiting for connection on RFCOMM channel", port)
+print("Waiting for connection on RFCOMM channel", port)
 
-    client_sock, client_info = server_sock.accept()
-    print("Accepted connection from", client_info)
+client_sock, client_info = server_sock.accept()
+print("Accepted connection from", client_info)
+while True:
     length = 1024* 10
     try:
             data = client_sock.recv(length)
