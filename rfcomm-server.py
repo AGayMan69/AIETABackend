@@ -42,7 +42,7 @@ while True:
             elif data == 'elevator':
                 reply = "elevator detection"
             else:
-                reply = "Nope"
+                reply = "Good"
 
             client_sock.send(reply)
             print(f"Sending {reply}")
