@@ -8,6 +8,7 @@ $Id: rfcomm-server.py 518 2007-08-10 07:20:07Z albert $
 """
 
 import bluetooth
+import json
 
 server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
 server_sock.bind(("", bluetooth.PORT_ANY))
@@ -33,17 +34,19 @@ while True:
     length = 1024
     try:
             data = client_sock.recv(length)
-            # if len(data) < dataSize:
-                # reply = "Corrupted Buffer Resend"
-            # else:
+            data = data.decode("utf-8")
+            data_json = json.loads(data)
             print("Received ", data)
             # Switching service mode
-            if data == 'obstacle':
-                reply = "obstacle avoidance"
-            elif data == 'elevator':
-                reply = "elevator detection"
-            else:
-                reply = "connected"
+            match data_json["mode"]:
+                case "obstacle":
+                    reply = "obstacle avoidance"
+                case "elevator":
+                    reply = "elevator detection"
+                case "start":
+                    reply = "connected"
+                case _:
+                    reply = "unknown command"
 
             client_sock.send(reply)
             print(f"Sending {reply}")
