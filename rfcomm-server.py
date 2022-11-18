@@ -38,15 +38,15 @@ while True:
             data_json = json.loads(data)
             print("Received ", data)
             # Switching service mode
-            match data_json["mode"]:
-                case "obstacle":
-                    reply = "obstacle avoidance"
-                case "elevator":
-                    reply = "elevator detection"
-                case "start":
-                    reply = "connected"
-                case _:
-                    reply = "unknown command"
+            mode = data_json["mode"]
+            if mode =="obstacle":
+                reply = "obstacle avoidance"
+            elif mode =="elevator":
+                reply = "elevator detection"
+            elif mode == "start":
+                reply = "connected"
+            else:
+                reply = "unknown command"
 
             client_sock.send(reply)
             print(f"Sending {reply}")
