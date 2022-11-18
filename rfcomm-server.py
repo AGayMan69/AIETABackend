@@ -49,7 +49,7 @@ while True:
                 reply = "unknown command"
 
             reply = reply.encode("utf-8")
-            client_sock.send(reply))
+            client_sock.send(reply)
             print(f"Sending {reply}")
     except KeyboardInterrupt:
         print("Disconnected.")
