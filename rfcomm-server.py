@@ -33,12 +33,10 @@ while True:
     length = 1024
     try:
             data = client_sock.recv(length)
-            dataSizeStr, ignored, data = data.partition(':')
-            dataSize = int(dataSizeStr)
             if len(data) < dataSize:
                 reply = "Corrupted Buffer Resend"
             else:
-                print(f"Received {data}")
+                print("Received ", data)
                 # Switching service mode
                 if data == 'obstacle':
                     reply = "obstacle avoidance"
