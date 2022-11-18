@@ -47,10 +47,6 @@ while True:
 
             client_sock.send(reply)
             print(f"Sending {reply}")
-
-    except IOError:
-        pass
-
     except KeyboardInterrupt:
         print("Disconnected.")
 
