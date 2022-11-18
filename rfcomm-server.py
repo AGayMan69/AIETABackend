@@ -33,17 +33,17 @@ while True:
     length = 1024
     try:
             data = client_sock.recv(length)
-            if len(data) < dataSize:
-                reply = "Corrupted Buffer Resend"
+            # if len(data) < dataSize:
+                # reply = "Corrupted Buffer Resend"
+            # else:
+            print("Received ", data)
+            # Switching service mode
+            if data == 'obstacle':
+                reply = "obstacle avoidance"
+            elif data == 'elevator':
+                reply = "elevator detection"
             else:
-                print("Received ", data)
-                # Switching service mode
-                if data == 'obstacle':
-                    reply = "obstacle avoidance"
-                elif data == 'elevator':
-                    reply = "elevator detection"
-                else:
-                    reply = "connected"
+                reply = "connected"
 
             client_sock.send(reply)
             print(f"Sending {reply}")
