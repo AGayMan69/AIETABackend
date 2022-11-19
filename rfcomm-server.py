@@ -124,9 +124,10 @@ class ServiceSwitcher:
                         self.currentService = ObstacleService()
                         self.currentService.serviceThread.start()
                     elif not self.currentService.serviceThread.is_alive():
-                        self.currentService.serviceThread.start()
                         print("Service begin ...")
                         self.logService("Obstacle")
+                        print("Service thread:", self.currentService.serviceThread.name)
+                        self.currentService.serviceThread.start()
 
                 else:
                     reply = "unknown command"
@@ -148,6 +149,7 @@ class ObstacleService:
     def __init__(self):
         self.terminate = False
         self.serviceThread = threading.Thread(target=self.runService())
+        # self.serviceThread.name = "Obstacle Service Thread"
         self.name = "Obstacle Service"
 
     def runService(self):
@@ -162,6 +164,7 @@ class ElevatorService:
     def __init__(self):
         self.terminate = False
         self.serviceThread = threading.Thread(target=self.runService())
+        # self.serviceThread.name = "Elevator Service Thread"
         self.name = "Elevator Service"
 
     def runService(self):
@@ -187,4 +190,5 @@ if __name__ == '__main__':
     btServer.startBluetoothServer()
     switchManager = ServiceSwitcher(btServer)
     btReceiveThread = threading.Thread(target=switchManager.startReceiveMessage())
+    btReceiveThread.name = "Switch Switcher Thread"
     btReceiveThread.start()
