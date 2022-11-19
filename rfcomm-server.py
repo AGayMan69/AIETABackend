@@ -98,24 +98,24 @@ class ServiceSwitcher:
         while terminate:
             try:
                 data = self.blueServer.receiveMessage()
-                print("Received ", data)
+                # print("Received ", data)
+
                 # Switching service mode
                 mode = data["mode"]
                 if mode == "obstacle":
-                    reply = "obstacle avoidance"
                     if self.currentService.name == "Elevator Service":
                         self.sendSwitchServiceResponse("obstacle")
-                    #     self.currentService.terminateService()
+                        self.currentService.terminateService()
                         self.currentService = ObstacleService()
-                    #     self.currentService.serviceThread.start()
+                        self.currentService.runService()
                         self.logService("Obstacle")
 
                 elif mode == "elevator":
                     if self.currentService.name == "Obstacle Service":
                         self.sendSwitchServiceResponse("elevator")
-                    #     self.currentService.terminateService()
+                        self.currentService.terminateService()
                         self.currentService = ElevatorService()
-                    #     self.currentService.serviceThread.start()
+                        self.currentService.runService()
                         self.logService("Elevator")
 
                 elif mode == "start":
@@ -124,16 +124,15 @@ class ServiceSwitcher:
                     print(self.currentService.name)
                     if self.currentService.name == "Elevator Service":
                         print("terminate elevator")
-                    #     self.currentService.terminateService()
+                        self.currentService.terminateService()
                         self.currentService = ObstacleService()
-                    #     self.currentService.serviceThread.start()
-                        self.logService("Obstacle")
-                    # elif not self.currentService.serviceThread.is_alive():
-                    else:
+                        self.currentService.runService()
                         print("Service begin ...")
                         self.logService("Obstacle")
-                    #     print("Service thread:", self.currentService.serviceThread.name)
-                    #     self.currentService.serviceThread.start()
+                    elif self.currentService.serviceThread is None:
+                        print("Service begin ...")
+                        self.logService("Obstacle")
+                        self.currentService.runService()
 
                 else:
                     self.sendSwitchServiceResponse("unknown command")
@@ -143,7 +142,7 @@ class ServiceSwitcher:
                 self.blueServer.clientSocket.close()
                 self.blueServer.serverSocket.close()
                 terminate = False
-                # self.currentService.terminateService()
+                self.currentService.terminateService()
 
     def startReceiveMessage(self):
         threading.Thread(target=self._startReceiveMessage).start()
