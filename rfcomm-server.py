@@ -92,9 +92,8 @@ class ServiceSwitcher:
     def __init__(self, blueServer):
         self.blueServer = blueServer
         self.currentService = ObstacleService()
-        print("idk why this isn't working")
 
-    def startReceiveMessage(self):
+    def _startReceiveMessage(self):
         while True:
             try:
                 data = self.blueServer.receiveMessage()
@@ -103,31 +102,34 @@ class ServiceSwitcher:
                 mode = data["mode"]
                 if mode == "obstacle":
                     reply = "obstacle avoidance"
-                    # if self.currentService.name == "Elevator Service":
+                    if self.currentService.name == "Elevator Service":
                     #     self.currentService.terminateService()
-                    #     self.currentService = ObstacleService()
+                        self.currentService = ObstacleService()
                     #     self.currentService.serviceThread.start()
-                    #     self.logService("Obstacle")
+                        self.logService("Obstacle")
 
                 elif mode == "elevator":
                     reply = "elevator detection"
-                    # if self.currentService.name == "Obstacle Service":
+                    if self.currentService.name == "Obstacle Service":
                     #     self.currentService.terminateService()
-                    #     self.currentService = ElevatorService()
+                        self.currentService = ElevatorService()
                     #     self.currentService.serviceThread.start()
-                    #     self.logService("Elevator")
+                        self.logService("Elevator")
 
                 elif mode == "start":
                     reply = "connected"
                     # check current service
                     print(self.currentService.name)
-                    # if self.currentService.name == "Elevator Service":
+                    if self.currentService.name == "Elevator Service":
+                        print("terminate elevator")
                     #     self.currentService.terminateService()
-                    #     self.currentService = ObstacleService()
+                        self.currentService = ObstacleService()
                     #     self.currentService.serviceThread.start()
+                        self.logService("Obstacle")
                     # elif not self.currentService.serviceThread.is_alive():
-                    #     print("Service begin ...")
-                    #     self.logService("Obstacle")
+                    else:
+                        print("Service begin ...")
+                        self.logService("Obstacle")
                     #     print("Service thread:", self.currentService.serviceThread.name)
                     #     self.currentService.serviceThread.start()
 
@@ -143,6 +145,9 @@ class ServiceSwitcher:
                 self.blueServer.serverSocket.close()
                 # self.currentService.terminateService()
 
+    def startReceiveMessage(self):
+        threading.Thread(target=self._startReceiveMessage).start()
+
     def logService(self, serviceName):
         print("Service Switcher: Starting", serviceName, " service ...")
 
@@ -150,13 +155,16 @@ class ServiceSwitcher:
 class ObstacleService:
     def __init__(self):
         self.terminate = False
-        self.serviceThread = threading.Thread(target=self.runService())
-        # self.serviceThread.name = "Obstacle Service Thread"
+        self.serviceThread = None
         self.name = "Obstacle Service"
 
-    def runService(self):
+    def _runService(self):
         while not self.terminate:
             obstacleMode()
+
+    def runService(self):
+        self.serviceThread = threading.Thread(target=self._runService)
+        self.serviceThread.start()
 
     def terminateService(self):
         self.terminate = True
@@ -165,13 +173,16 @@ class ObstacleService:
 class ElevatorService:
     def __init__(self):
         self.terminate = False
-        self.serviceThread = threading.Thread(target=self.runService())
-        # self.serviceThread.name = "Elevator Service Thread"
+        self.serviceThread = None
         self.name = "Elevator Service"
 
-    def runService(self):
+    def _runService(self):
         while not self.terminate:
             elevatorMode()
+
+    def runService(self):
+        self.serviceThread = threading.Thread(target=self._runService)
+        self.serviceThread.start()
 
     def terminateService(self):
         self.terminate = True
@@ -191,6 +202,4 @@ if __name__ == '__main__':
     btServer = BluetoothServer()
     btServer.startBluetoothServer()
     switchManager = ServiceSwitcher(btServer)
-    btReceiveThread = threading.Thread(target=switchManager.startReceiveMessage())
-    btReceiveThread.name = "Switch Switcher Thread"
-    btReceiveThread.start()
+    switchManager.startReceiveMessage()
