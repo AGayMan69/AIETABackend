@@ -92,6 +92,7 @@ class ServiceSwitcher:
     def __init__(self, blueServer):
         self.blueServer = blueServer
         self.currentService = ObstacleService()
+        print("idk why this isn't working")
 
     def startReceiveMessage(self):
         while True:
@@ -140,7 +141,7 @@ class ServiceSwitcher:
                 print("Bluetooth server Failed to receive data")
                 self.blueServer.clientSocket.close()
                 self.blueServer.serverSocket.close()
-                self.currentService.terminateService()
+                # self.currentService.terminateService()
 
     def logService(self, serviceName):
         print("Service Switcher: Starting", serviceName, " service ...")
