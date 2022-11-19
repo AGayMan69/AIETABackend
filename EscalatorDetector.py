@@ -88,6 +88,7 @@ class EscalatorDetector:
                 cY = int(frame.shape[0] / 2)
                 self.setStartPoint(cX,cY)
             # print(self.startAndEndPoint)
+            print('detecting')
 
             # get flow from current frame and prev frame
             nX, nY = self.calOpticalFlow(prevGrayFrame,frame)
