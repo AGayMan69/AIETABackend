@@ -136,6 +136,9 @@ class ServiceSwitcher:
                 print(f"Sending {reply}")
             except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
                 print("Bluetooth server Failed to receive data")
+                self.blueServer.clientSocket.close()
+                self.blueServer.serverSocket.close()
+                self.currentService.terminateService()
 
     def logService(self, serviceName):
         print("Service Switcher: Starting", serviceName, " service ...")
