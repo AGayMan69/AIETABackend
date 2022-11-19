@@ -108,7 +108,7 @@ class ServiceSwitcher:
                         self.currentService.terminateService()
                         self.currentService = ObstacleService()
                         self.currentService.runService()
-                        self.logService("Obstacle")
+                        self.logService("障礙物")
 
                 elif mode == "elevator":
                     if self.currentService.name == "Obstacle Service":
@@ -116,7 +116,7 @@ class ServiceSwitcher:
                         self.currentService.terminateService()
                         self.currentService = ElevatorService()
                         self.currentService.runService()
-                        self.logService("Elevator")
+                        self.logService("電梯")
 
                 elif mode == "start":
                     self.sendSwitchServiceResponse("connected")
@@ -128,10 +128,10 @@ class ServiceSwitcher:
                         self.currentService = ObstacleService()
                         self.currentService.runService()
                         print("Service begin ...")
-                        self.logService("Obstacle")
+                        self.logService("障礙物")
                     elif self.currentService.serviceThread is None:
                         print("Service begin ...")
-                        self.logService("Obstacle")
+                        self.logService("障礙物")
                         self.currentService.runService()
 
                 else:
@@ -151,9 +151,12 @@ class ServiceSwitcher:
         print("Service Switcher: Starting", serviceName, "service ...")
 
     def sendSwitchServiceResponse(self, mode):
-        mode = mode.encode("utf-8")
-        self.blueServer.sendMessage(mode)
-        print(f"Sending {mode}")
+        messageString = f"{mode}模式"
+        dict = {"action": "switch mode", "message": messageString}
+        jsonString = json.dumps(dict, indent=4)
+        response = jsonString.encode("utf-8")
+        self.blueServer.sendMessage(response)
+        print(f"Sending {response}")
 
 
 class ObstacleService:
