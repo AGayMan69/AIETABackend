@@ -104,34 +104,34 @@ class ServiceSwitcher:
                 mode = data["mode"]
                 if mode == "obstacle":
                     if self.currentService.name == "Elevator Service":
-                        self.sendSwitchServiceResponse("obstacle")
+                        self.logService("obstacle")
                         self.currentService.terminateService()
                         self.currentService = ObstacleService()
                         self.currentService.runService()
-                        self.logService("障礙物")
+                        self.sendSwitchServiceResponse("障礙物")
 
                 elif mode == "elevator":
                     if self.currentService.name == "Obstacle Service":
-                        self.sendSwitchServiceResponse("elevator")
+                        self.logService("elevator")
                         self.currentService.terminateService()
                         self.currentService = ElevatorService()
                         self.currentService.runService()
-                        self.logService("電梯")
+                        self.sendSwitchServiceResponse("電梯")
 
                 elif mode == "start":
-                    self.sendSwitchServiceResponse("connected")
+                    self.sendSwitchServiceResponse("障礙物")
                     # check current service
                     print(self.currentService.name)
                     if self.currentService.name == "Elevator Service":
                         print("terminate elevator")
+                        print("Service begin ...")
+                        self.logService("obstacle")
                         self.currentService.terminateService()
                         self.currentService = ObstacleService()
                         self.currentService.runService()
-                        print("Service begin ...")
-                        self.logService("障礙物")
                     elif self.currentService.serviceThread is None:
                         print("Service begin ...")
-                        self.logService("障礙物")
+                        self.logService("obstacle")
                         self.currentService.runService()
 
                 else:
