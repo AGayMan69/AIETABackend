@@ -102,19 +102,19 @@ class ServiceSwitcher:
                 mode = data["mode"]
                 if mode == "obstacle":
                     reply = "obstacle avoidance"
-                    print("Starting Obstacle service ...")
                     if self.currentService.name == "Elevator Service":
                         self.currentService.terminateService()
                         self.currentService = ObstacleService()
                         self.currentService.serviceThread.run()
+                        self.logService("Obstacle")
 
                 elif mode == "elevator":
                     reply = "elevator detection"
-                    print("Starting elevator service ...")
                     if self.currentService.name == "Obstacle Service":
                         self.currentService.terminateService()
                         self.currentService = ElevatorService()
                         self.currentService.serviceThread.run()
+                        self.logService("Elevator")
 
                 elif mode == "start":
                     reply = "connected"
@@ -126,7 +126,7 @@ class ServiceSwitcher:
                     elif not self.currentService.serviceThread.is_alive():
                         self.currentService.serviceThread.run()
                     print("Service begin ...")
-                    print("Starting Obstacle service ...")
+                    self.logService("Obstacle")
 
                 else:
                     reply = "unknown command"
@@ -136,6 +136,9 @@ class ServiceSwitcher:
                 print(f"Sending {reply}")
             except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
                 print("Bluetooth server Failed to receive data")
+
+    def logService(self, serviceName):
+        print("Service Switcher: Starting", serviceName, " service ...")
 
 
 class ObstacleService:
