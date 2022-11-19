@@ -7,6 +7,7 @@ Author: Albert Huang <albert@csail.mit.edu>
 $Id: rfcomm-server.py 518 2007-08-10 07:20:07Z albert $
 """
 import threading
+import time
 
 import bluetooth as bt
 import json
@@ -87,31 +88,97 @@ class BluetoothServer:
         self.clientSocket.send(reply)
 
 
-def startReceiveMessage(blueServer):
-    while True:
-        try:
-            data = blueServer.receiveMessage()
-            print("Received ", data)
-            # Switching service mode
-            mode = data["mode"]
-            if mode == "obstacle":
-                reply = "obstacle avoidance"
-            elif mode == "elevator":
-                reply = "elevator detection"
-            elif mode == "start":
-                reply = "connected"
-            else:
-                reply = "unknown command"
+class ServiceSwitcher:
+    def __init__(self, blueServer):
+        self.blueServer = blueServer
+        self.currentService = ObstacleService()
 
-            reply = reply.encode("utf-8")
-            blueServer.sendMessage(reply)
-            print(f"Sending {reply}")
-        except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
-            print("Bluetooth server Failed to receive data")
+    def startReceiveMessage(self):
+        while True:
+            try:
+                data = self.blueServer.receiveMessage()
+                print("Received ", data)
+                # Switching service mode
+                mode = data["mode"]
+                if mode == "obstacle":
+                    reply = "obstacle avoidance"
+                    print("Starting Obstacle service ...")
+                    if self.currentService.name == "Elevator Service":
+                        self.currentService.terminateService()
+                        self.currentService = ObstacleService()
+                        self.currentService.serviceThread.run()
+
+                elif mode == "elevator":
+                    reply = "elevator detection"
+                    print("Starting elevator service ...")
+                    if self.currentService.name == "Obstacle Service":
+                        self.currentService.terminateService()
+                        self.currentService = ElevatorService()
+                        self.currentService.serviceThread.run()
+
+                elif mode == "start":
+                    reply = "connected"
+                    # check current service
+                    if self.currentService.name == "Elevator Service":
+                        self.currentService.terminateService()
+                        self.currentService = ObstacleService()
+                        self.currentService.serviceThread.run()
+                    elif not self.currentService.serviceThread.is_alive():
+                        self.currentService.serviceThread.run()
+                    print("Service begin ...")
+                    print("Starting Obstacle service ...")
+
+                else:
+                    reply = "unknown command"
+
+                reply = reply.encode("utf-8")
+                self.blueServer.sendMessage(reply)
+                print(f"Sending {reply}")
+            except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
+                print("Bluetooth server Failed to receive data")
+
+
+class ObstacleService:
+    def __init__(self):
+        self.terminate = False
+        self.serviceThread = threading.Thread(target=self.runService())
+        self.name = "Obstacle Service"
+
+    def runService(self):
+        while not self.terminate:
+            obstacleMode()
+
+    def terminateService(self):
+        self.terminate = True
+
+
+class ElevatorService:
+    def __init__(self):
+        self.terminate = False
+        self.serviceThread = threading.Thread(target=self.runService())
+        self.name = "Elevator Service"
+
+    def runService(self):
+        while not self.terminate:
+            elevatorMode()
+
+    def terminateService(self):
+        self.terminate = True
+
+
+def obstacleMode():
+    time.sleep(5)
+    print("Running obstacle mode ...")
+
+
+def elevatorMode():
+    time.sleep(2)
+    print("Running elevator mode ...")
 
 
 if __name__ == '__main__':
     btServer = BluetoothServer()
     btServer.startBluetoothServer()
-    btReceiveThread = threading.Thread(target=startReceiveMessage(btServer))
+    switchManager = ServiceSwitcher(btServer)
+    btReceiveThread = threading.Thread(target=switchManager.startReceiveMessage())
     btReceiveThread.start()
