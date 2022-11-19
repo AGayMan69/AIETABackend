@@ -6,42 +6,97 @@ Simple demonstration of a server application that uses RFCOMM sockets.
 Author: Albert Huang <albert@csail.mit.edu>
 $Id: rfcomm-server.py 518 2007-08-10 07:20:07Z albert $
 """
+import threading
 
-import bluetooth
+import bluetooth as bt
 import json
 
-server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-server_sock.bind(("", bluetooth.PORT_ANY))
-server_sock.listen(1)
 
-port = server_sock.getsockname()[1]
+class BluetoothServer:
+    def __init__(self, serverSocket=None, clientSocket=None):
+        if serverSocket is None:
+            self.serverSocket = serverSocket
+            self.clientSocket = clientSocket
+            self.serviceName = "ATETA"
+            self.uuid = "00030000-0000-1000-8000-00805F9B34FB"
+        else:
+            self.serverSocket = serverSocket
+            self.clientSocket = clientSocket
 
-# uuid = "94f39d29-7d6d-437d-973b-fba39e49d4ee"
-uuid = "00030000-0000-1000-8000-00805F9B34FB"
+    def getBluetoothSocket(self):
+        try:
+            self.serverSocket = bt.BluetoothSocket(bt.RFCOMM)
+            print("Bluetooth server socket successfully created for RFCOMM service...")
+        except (bt.BluetoothError, SystemExit, KeyboardInterrupt) as e:
+            print("Failed to create the bluetooth server socket ")
 
-bluetooth.advertise_service(server_sock, "SampleServer", service_id=uuid,
-                            service_classes=[uuid, bluetooth.SERIAL_PORT_CLASS],
-                            profiles=[bluetooth.SERIAL_PORT_PROFILE],
-                            # protocols=[bluetooth.OBEX_UUID]
-                            )
+    def getBluetoothConnection(self):
+        try:
+            self.serverSocket.bind(("", bt.PORT_ANY))
+            print("Bluetooth server socket bind successfully on host "" to PORT_ANY ...")
+        except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt) as e:
+            print("Failed to bind server socket on host to PORT_ANY ...")
+        try:
+            self.serverSocket.listen(1)
+            print("Bluetooth server socket put to listening mode successfully ...")
+        except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt) as e:
+            print("Failed to put server socket to listening mode ...")
+        try:
+            port = self.serverSocket.getsocketname()[1]
+            print("Waiting for connection on RFCOMM channel ", port)
+        except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
+            print("Failed to get connection on RFCOMM channel ...")
 
+    def advertiseBluetoothService(self):
+        try:
+            bt.advertise_service(
+                self.serverSocket,
+                self.serviceName,
+                service_id=self.uuid,
+                service_classes=[self.uuid, bt.SERIAL_PORT_CLASS],
+                profiles=[bt.SERIAL_PORT_PROFILE]
+            )
+            print(self.serviceName, "advertised successfully")
+        except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
+            print("Failed to advertise bluetooth services ...")
 
-print("Waiting for connection on RFCOMM channel", port)
+    def acceptBluetoothConnection(self):
+        try:
+            self.clientSocket, client_info = self.serverSocket.accept()
+            print("Accepted bluetooth connection from ", client_info)
+        except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
+            print("Failed to accept bluetooth connection ...")
 
-client_sock, client_info = server_sock.accept()
-print("Accepted connection from", client_info)
-while True:
-    length = 1024
-    try:
-            data = client_sock.recv(length)
+    def startBluetoothServer(self):
+        self.getBluetoothSocket()
+        self.getBluetoothConnection()
+        self.advertiseBluetoothService()
+        self.acceptBluetoothConnection()
+
+    def receiveMessage(self):
+        length = 1024
+        try:
+            data = self.clientSocket.recv(length)
             data = data.decode("utf-8")
             data_json = json.loads(data)
+            return data_json
+        except (Exception, IOError, bt.BluetoothError):
+            pass
+
+    def sendMessage(self, reply):
+        self.clientSocket.send(reply)
+
+
+def startReceiveMessage(blueServer):
+    while True:
+        try:
+            data = blueServer.receiveMessage()
             print("Received ", data)
             # Switching service mode
-            mode = data_json["mode"]
-            if mode =="obstacle":
+            mode = data["mode"]
+            if mode == "obstacle":
                 reply = "obstacle avoidance"
-            elif mode =="elevator":
+            elif mode == "elevator":
                 reply = "elevator detection"
             elif mode == "start":
                 reply = "connected"
@@ -49,11 +104,14 @@ while True:
                 reply = "unknown command"
 
             reply = reply.encode("utf-8")
-            client_sock.send(reply)
+            blueServer.sendMessage(reply)
             print(f"Sending {reply}")
-    except KeyboardInterrupt:
-        print("Disconnected.")
+        except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
+            print("Bluetooth server Failed to receive data")
 
-        client_sock.close()
-        server_sock.close()
-        print("All done.")
+
+if __name__ == '__main__':
+    btServer = BluetoothServer()
+    btServer.startBluetoothServer()
+    btReceiveThread = threading.Thread(target=startReceiveMessage(btServer))
+    btReceiveThread.start()
