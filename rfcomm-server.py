@@ -102,32 +102,33 @@ class ServiceSwitcher:
                 mode = data["mode"]
                 if mode == "obstacle":
                     reply = "obstacle avoidance"
-                    if self.currentService.name == "Elevator Service":
-                        self.currentService.terminateService()
-                        self.currentService = ObstacleService()
-                        self.currentService.serviceThread.start()
-                        self.logService("Obstacle")
+                    # if self.currentService.name == "Elevator Service":
+                    #     self.currentService.terminateService()
+                    #     self.currentService = ObstacleService()
+                    #     self.currentService.serviceThread.start()
+                    #     self.logService("Obstacle")
 
                 elif mode == "elevator":
                     reply = "elevator detection"
-                    if self.currentService.name == "Obstacle Service":
-                        self.currentService.terminateService()
-                        self.currentService = ElevatorService()
-                        self.currentService.serviceThread.start()
-                        self.logService("Elevator")
+                    # if self.currentService.name == "Obstacle Service":
+                    #     self.currentService.terminateService()
+                    #     self.currentService = ElevatorService()
+                    #     self.currentService.serviceThread.start()
+                    #     self.logService("Elevator")
 
                 elif mode == "start":
                     reply = "connected"
                     # check current service
-                    if self.currentService.name == "Elevator Service":
-                        self.currentService.terminateService()
-                        self.currentService = ObstacleService()
-                        self.currentService.serviceThread.start()
-                    elif not self.currentService.serviceThread.is_alive():
-                        print("Service begin ...")
-                        self.logService("Obstacle")
-                        print("Service thread:", self.currentService.serviceThread.name)
-                        self.currentService.serviceThread.start()
+                    print(self.currentService.name)
+                    # if self.currentService.name == "Elevator Service":
+                    #     self.currentService.terminateService()
+                    #     self.currentService = ObstacleService()
+                    #     self.currentService.serviceThread.start()
+                    # elif not self.currentService.serviceThread.is_alive():
+                    #     print("Service begin ...")
+                    #     self.logService("Obstacle")
+                    #     print("Service thread:", self.currentService.serviceThread.name)
+                    #     self.currentService.serviceThread.start()
 
                 else:
                     reply = "unknown command"
