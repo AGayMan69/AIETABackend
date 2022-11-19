@@ -105,7 +105,7 @@ class ServiceSwitcher:
                     if self.currentService.name == "Elevator Service":
                         self.currentService.terminateService()
                         self.currentService = ObstacleService()
-                        self.currentService.serviceThread.run()
+                        self.currentService.serviceThread.start()
                         self.logService("Obstacle")
 
                 elif mode == "elevator":
@@ -113,7 +113,7 @@ class ServiceSwitcher:
                     if self.currentService.name == "Obstacle Service":
                         self.currentService.terminateService()
                         self.currentService = ElevatorService()
-                        self.currentService.serviceThread.run()
+                        self.currentService.serviceThread.start()
                         self.logService("Elevator")
 
                 elif mode == "start":
@@ -122,11 +122,11 @@ class ServiceSwitcher:
                     if self.currentService.name == "Elevator Service":
                         self.currentService.terminateService()
                         self.currentService = ObstacleService()
-                        self.currentService.serviceThread.run()
+                        self.currentService.serviceThread.start()
                     elif not self.currentService.serviceThread.is_alive():
-                        self.currentService.serviceThread.run()
-                    print("Service begin ...")
-                    self.logService("Obstacle")
+                        self.currentService.serviceThread.start()
+                        print("Service begin ...")
+                        self.logService("Obstacle")
 
                 else:
                     reply = "unknown command"
