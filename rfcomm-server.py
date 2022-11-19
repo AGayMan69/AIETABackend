@@ -104,21 +104,22 @@ class ServiceSwitcher:
                 if mode == "obstacle":
                     reply = "obstacle avoidance"
                     if self.currentService.name == "Elevator Service":
+                        self.sendSwitchServiceResponse("obstacle")
                     #     self.currentService.terminateService()
                         self.currentService = ObstacleService()
                     #     self.currentService.serviceThread.start()
                         self.logService("Obstacle")
 
                 elif mode == "elevator":
-                    reply = "elevator detection"
                     if self.currentService.name == "Obstacle Service":
+                        self.sendSwitchServiceResponse("elevator")
                     #     self.currentService.terminateService()
                         self.currentService = ElevatorService()
                     #     self.currentService.serviceThread.start()
                         self.logService("Elevator")
 
                 elif mode == "start":
-                    reply = "connected"
+                    self.sendSwitchServiceResponse("connected")
                     # check current service
                     print(self.currentService.name)
                     if self.currentService.name == "Elevator Service":
@@ -135,11 +136,8 @@ class ServiceSwitcher:
                     #     self.currentService.serviceThread.start()
 
                 else:
-                    reply = "unknown command"
+                    self.sendSwitchServiceResponse("unknown command")
 
-                reply = reply.encode("utf-8")
-                self.blueServer.sendMessage(reply)
-                print(f"Sending {reply}")
             except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
                 print("Bluetooth server Failed to receive data")
                 self.blueServer.clientSocket.close()
@@ -152,6 +150,11 @@ class ServiceSwitcher:
 
     def logService(self, serviceName):
         print("Service Switcher: Starting", serviceName, "service ...")
+
+    def sendSwitchServiceResponse(self, mode):
+        mode = mode.encode("utf-8")
+        self.blueServer.sendMessage(mode)
+        print(f"Sending {mode}")
 
 
 class ObstacleService:
