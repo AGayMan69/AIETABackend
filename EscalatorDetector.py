@@ -94,7 +94,7 @@ class EscalatorDetector:
             self.startAndEndPoint['End'] = (int(nX),int(nY))
             prevGrayFrame = frame
 
-            self.DisplayDetectPoint(cv2,frame.copy(),nX,nY)
+            # self.DisplayDetectPoint(cv2,frame.copy(),nX,nY)
             key = cv2.waitKey(1)
             if key == 27 or curTime > timeOut:
                 break
