@@ -139,7 +139,7 @@ class ServiceSwitcher:
                 else:
                     self.sendSwitchServiceResponse("unknown command")
 
-            except bt.BluetoothError:
+            except (bt.BluetoothError, TypeError):
                 print("Closing the client socket")
                 self.blueServer.clientSocket.close()
                 # self.blueServer.serverSocket.close()
