@@ -6,6 +6,7 @@ Simple demonstration of a server application that uses RFCOMM sockets.
 Author: Albert Huang <albert@csail.mit.edu>
 $Id: rfcomm-server.py 518 2007-08-10 07:20:07Z albert $
 """
+import random
 import threading
 import time
 
@@ -159,10 +160,12 @@ class ServiceSwitcher:
 
 
 class ObstacleService:
+
     def __init__(self, bluetoothServer):
         self.terminate = False
         self.serviceThread = None
         self.name = "Obstacle Service"
+        self.moveDirection = ["向左行", "向右行", "向前行", "前方不便同行"]
         self.btServer = bluetoothServer
 
     def _runService(self):
@@ -179,7 +182,7 @@ class ObstacleService:
         self.terminate = True
 
     def obstacleMode(self):
-        result = "Turn left"
+        result = self.moveDirection[random.randint(0, 3)]
         self.sendResponse(result)
 
     def sendResponse(self, result):
@@ -234,5 +237,6 @@ if __name__ == '__main__':
             switchManager.startReceiveMessage()
     except (KeyboardInterrupt, SystemExit):
         btServer.serverSocket.close()
+        btServer.clientSocket.close()
         switchManager.currentService.terminateService()
         print("Stopping the server")

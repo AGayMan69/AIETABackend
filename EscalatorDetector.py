@@ -50,7 +50,7 @@ class EscalatorDetector:
         elif 170 > angle > 10:
             return '電梯向下'
         else:
-            return 'STOP'
+            return '電梯靜止'
 
     def setTimeOut(self,sec):
         self.duration = sec
