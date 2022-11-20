@@ -43,11 +43,11 @@ class BluetoothServer:
             print("Bluetooth server socket put to listening mode successfully ...")
         except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt) as e:
             print("Failed to put server socket to listening mode ...")
-        # try:
-        #     port = self.serverSocket.getsocketname()[1]
-        #     print("Waiting for connection on RFCOMM channel ", port)
-        # except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
-        #     print("Failed to get connection on RFCOMM channel ...")
+        try:
+            port = self.serverSocket.getsocketname()[1]
+            print("Waiting for connection on RFCOMM channel ", port)
+        except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
+            print("Failed to get connection on RFCOMM channel ...")
 
     def advertiseBluetoothService(self):
         try:
@@ -143,7 +143,7 @@ class ServiceSwitcher:
                 else:
                     self.sendSwitchServiceResponse("unknown command")
 
-            except (Exception, bt.BluetoothError, SystemExit):
+            except (bt.BluetoothError, SystemExit):
                 print("Closing the client socket")
                 self.blueServer.clientSocket.close()
                 # self.blueServer.serverSocket.close()
