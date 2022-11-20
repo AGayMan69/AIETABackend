@@ -118,7 +118,7 @@ class ServiceSwitcher:
                     if self.currentService.name == "Obstacle Service":
                         self.logService("elevator")
                         self.currentService.terminateService()
-                        self.currentService = ElevatorService()
+                        self.currentService = ElevatorService(self.blueServer)
                         self.currentService.runService()
                         self.sendSwitchServiceResponse("電梯")
 
