@@ -224,13 +224,13 @@ class ElevatorService:
 if __name__ == '__main__':
     btServer = BluetoothServer()
     btServer.startBluetoothServer()
-    btServer.acceptBluetoothConnection()
-    # try:
-    #     while True:
-    #         btServer.acceptBluetoothConnection()
-    #         switchManager = ServiceSwitcher(btServer)
-    #         switchManager.startReceiveMessage()
-    # except (KeyboardInterrupt, SystemExit):
-    #     btServer.serverSocket.close()
-    #     switchManager.currentService.terminateService()
-    #     print("Stopping the server")
+    # btServer.acceptBluetoothConnection()
+    try:
+        while True:
+            btServer.acceptBluetoothConnection()
+            switchManager = ServiceSwitcher(btServer)
+            switchManager.startReceiveMessage()
+    except (KeyboardInterrupt, SystemExit):
+        btServer.serverSocket.close()
+        switchManager.currentService.terminateService()
+        print("Stopping the server")
