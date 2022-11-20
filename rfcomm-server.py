@@ -72,7 +72,6 @@ class BluetoothServer:
         self.getBluetoothSocket()
         self.getBluetoothConnection()
         self.advertiseBluetoothService()
-        self.acceptBluetoothConnection()
 
     def receiveMessage(self):
         length = 1024
@@ -93,7 +92,7 @@ class ServiceSwitcher:
         self.blueServer = blueServer
         self.currentService = ObstacleService()
 
-    def _startReceiveMessage(self):
+    def startReceiveMessage(self):
         terminate = True
         while terminate:
             try:
@@ -143,9 +142,6 @@ class ServiceSwitcher:
                 self.blueServer.serverSocket.close()
                 terminate = False
                 self.currentService.terminateService()
-
-    def startReceiveMessage(self):
-        threading.Thread(target=self._startReceiveMessage).start()
 
     def logService(self, serviceName):
         print("Service Switcher: Starting", serviceName, "service ...")
@@ -208,5 +204,7 @@ def elevatorMode():
 if __name__ == '__main__':
     btServer = BluetoothServer()
     btServer.startBluetoothServer()
-    switchManager = ServiceSwitcher(btServer)
-    switchManager.startReceiveMessage()
+    while True:
+        btServer.acceptBluetoothConnection()
+        switchManager = ServiceSwitcher(btServer)
+        switchManager.startReceiveMessage()
