@@ -119,7 +119,6 @@ class ServiceSwitcher:
                         self.sendSwitchServiceResponse("電梯")
 
                 elif mode == "start":
-                    self.sendSwitchServiceResponse("障礙物")
                     # check current service
                     print(self.currentService.name)
                     if self.currentService.name == "Elevator Service":
@@ -135,6 +134,7 @@ class ServiceSwitcher:
                         self.logService("obstacle")
                         # self.logService("elevator")
                         # self.currentService.runService()
+                    self.sendSwitchServiceResponse("障礙物")
 
                 else:
                     self.sendSwitchServiceResponse("unknown command")
@@ -224,12 +224,13 @@ class ElevatorService:
 if __name__ == '__main__':
     btServer = BluetoothServer()
     btServer.startBluetoothServer()
-    try:
-        while True:
-            btServer.acceptBluetoothConnection()
-            switchManager = ServiceSwitcher(btServer)
-            switchManager.startReceiveMessage()
-    except (KeyboardInterrupt, SystemExit):
-        btServer.serverSocket.close()
-        switchManager.currentService.terminateService()
-        print("Stopping the server")
+    btServer.acceptBluetoothConnection()
+    # try:
+    #     while True:
+    #         btServer.acceptBluetoothConnection()
+    #         switchManager = ServiceSwitcher(btServer)
+    #         switchManager.startReceiveMessage()
+    # except (KeyboardInterrupt, SystemExit):
+    #     btServer.serverSocket.close()
+    #     switchManager.currentService.terminateService()
+    #     print("Stopping the server")
