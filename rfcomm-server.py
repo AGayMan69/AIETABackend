@@ -43,11 +43,11 @@ class BluetoothServer:
             print("Bluetooth server socket put to listening mode successfully ...")
         except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt) as e:
             print("Failed to put server socket to listening mode ...")
-        try:
-            port = self.serverSocket.getsocketname()[1]
-            print("Waiting for connection on RFCOMM channel ", port)
-        except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
-            print("Failed to get connection on RFCOMM channel ...")
+        # try:
+        #     port = self.serverSocket.getsocketname()[1]
+        #     print("Waiting for connection on RFCOMM channel ", port)
+        # except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
+        #     print("Failed to get connection on RFCOMM channel ...")
 
     def advertiseBluetoothService(self):
         try:
@@ -85,17 +85,21 @@ class BluetoothServer:
             pass
 
     def sendMessage(self, reply):
-        self.clientSocket.send(reply)
+        try:
+            self.clientSocket.send(reply)
+        except bt.BluetoothError:
+            self.clientSocket.close()
+            switchManager.terminateSwitcher()
 
 
 class ServiceSwitcher:
     def __init__(self, blueServer):
         self.blueServer = blueServer
         self.currentService = ObstacleService(self.blueServer)
+        self.terminate = True
 
     def startReceiveMessage(self):
-        terminate = True
-        while terminate:
+        while self.terminate:
             try:
                 data = self.blueServer.receiveMessage()
                 # print("Received ", data)
@@ -124,14 +128,14 @@ class ServiceSwitcher:
                     print(self.currentService.name)
                     if self.currentService.name == "Elevator Service":
                         print("terminate elevator")
-                        print("Service begin ...")
+                        print("===========Service begin ...=============")
                         self.logService("obstacle")
                         self.currentService.terminateService()
                         self.currentService = ObstacleService(self.blueServer)
                         self.currentService.runService()
                     elif self.currentService.serviceThread is None:
                     # if self.currentService.serviceThread is None:
-                        print("Service begin ...")
+                        print("===========Service begin ...=============")
                         self.logService("obstacle")
                         # self.logService("elevator")
                         self.currentService.runService()
@@ -143,9 +147,11 @@ class ServiceSwitcher:
                 print("Closing the client socket")
                 self.blueServer.clientSocket.close()
                 # self.blueServer.serverSocket.close()
-                terminate = False
-                self.currentService.terminateService()
+                self.terminateSwitcher()
 
+    def terminateSwitcher(self):
+        self.terminate = False
+        self.currentService.terminateService()
     def logService(self, serviceName):
         print("Service Switcher: Starting", serviceName, "service ...")
 
