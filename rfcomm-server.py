@@ -175,6 +175,7 @@ class ObstacleService:
         self.serviceThread.start()
 
     def terminateService(self):
+        print("Terminating", self.name, "...")
         self.terminate = True
 
     def obstacleMode(self):
@@ -207,6 +208,7 @@ class ElevatorService:
         self.serviceThread.start()
 
     def terminateService(self):
+        print("Terminating", self.name, "...")
         self.terminate = True
 
     def elevatorMode(self):
