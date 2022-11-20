@@ -139,7 +139,7 @@ class ServiceSwitcher:
             except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
                 print("Bluetooth server Failed to receive data")
                 self.blueServer.clientSocket.close()
-                self.blueServer.serverSocket.close()
+                # self.blueServer.serverSocket.close()
                 terminate = False
                 self.currentService.terminateService()
 
