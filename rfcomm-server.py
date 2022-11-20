@@ -63,7 +63,6 @@ class BluetoothServer:
             print("Failed to advertise bluetooth services ...")
 
     def acceptBluetoothConnection(self):
-        print("Waiting for bluetooth connection ...")
         try:
             self.clientSocket, client_info = self.serverSocket.accept()
             print("Accepted bluetooth connection from ", client_info)
@@ -86,23 +85,17 @@ class BluetoothServer:
             pass
 
     def sendMessage(self, reply):
-        try:
-            self.clientSocket.send(reply)
-        except bt.BluetoothError:
-            raise bt.BluetoothError
-            # self.clientSocket.close()
-            # switchManager.terminateSwitcher()
+        self.clientSocket.send(reply)
 
 
 class ServiceSwitcher:
     def __init__(self, blueServer):
         self.blueServer = blueServer
         self.currentService = ObstacleService(self.blueServer)
-        self.terminate = True
 
     def startReceiveMessage(self):
-        print("Start receiving message")
-        while self.terminate:
+        terminate = True
+        while terminate:
             try:
                 data = self.blueServer.receiveMessage()
                 # print("Received ", data)
@@ -131,14 +124,14 @@ class ServiceSwitcher:
                     print(self.currentService.name)
                     if self.currentService.name == "Elevator Service":
                         print("terminate elevator")
-                        print("===========Service begin ...=============")
+                        print("Service begin ...")
                         self.logService("obstacle")
                         self.currentService.terminateService()
                         self.currentService = ObstacleService(self.blueServer)
                         self.currentService.runService()
                     elif self.currentService.serviceThread is None:
-                    # if self.currentService.serviceThread is None:
-                        print("===========Service begin ...=============")
+                        # if self.currentService.serviceThread is None:
+                        print("Service begin ...")
                         self.logService("obstacle")
                         # self.logService("elevator")
                         self.currentService.runService()
@@ -146,15 +139,13 @@ class ServiceSwitcher:
                 else:
                     self.sendSwitchServiceResponse("unknown command")
 
-            except (bt.BluetoothError, SystemExit):
+            except (Exception, bt.BluetoothError, SystemExit):
                 print("Closing the client socket")
                 self.blueServer.clientSocket.close()
                 # self.blueServer.serverSocket.close()
-                self.terminateSwitcher()
+                terminate = False
+                self.currentService.terminateService()
 
-    def terminateSwitcher(self):
-        self.terminate = False
-        self.currentService.terminateService()
     def logService(self, serviceName):
         print("Service Switcher: Starting", serviceName, "service ...")
 
@@ -240,5 +231,5 @@ if __name__ == '__main__':
             switchManager.startReceiveMessage()
     except KeyboardInterrupt:
         btServer.serverSocket.close()
-        # switchManager.currentService.terminateService()
+        switchManager.currentService.terminateService()
         print("Stopping the server")
