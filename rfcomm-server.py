@@ -91,7 +91,7 @@ class BluetoothServer:
 class ServiceSwitcher:
     def __init__(self, blueServer):
         self.blueServer = blueServer
-        self.currentService = ElevatorService(self.blueServer)
+        self.currentService = ObstacleService(self.blueServer)
 
     def startReceiveMessage(self):
         terminate = True
@@ -122,18 +122,18 @@ class ServiceSwitcher:
                     self.sendSwitchServiceResponse("障礙物")
                     # check current service
                     print(self.currentService.name)
-                    # if self.currentService.name == "Elevator Service":
-                    #     print("terminate elevator")
-                    #     print("Service begin ...")
-                    #     self.logService("obstacle")
-                    #     self.currentService.terminateService()
-                    #     self.currentService = ObstacleService(self.blueServer)
-                    #     self.currentService.runService()
-                    # elif self.currentService.serviceThread is None:
-                    if self.currentService.serviceThread is None:
+                    if self.currentService.name == "Elevator Service":
+                        print("terminate elevator")
                         print("Service begin ...")
-                        # self.logService("obstacle")
-                        self.logService("elevator")
+                        self.logService("obstacle")
+                        self.currentService.terminateService()
+                        self.currentService = ObstacleService(self.blueServer)
+                        self.currentService.runService()
+                    elif self.currentService.serviceThread is None:
+                    # if self.currentService.serviceThread is None:
+                        print("Service begin ...")
+                        self.logService("obstacle")
+                        # self.logService("elevator")
                         self.currentService.runService()
 
                 else:
@@ -168,7 +168,7 @@ class ObstacleService:
     def _runService(self):
         while not self.terminate:
             self.obstacleMode()
-            time.sleep(3)
+            time.sleep(10)
 
     def runService(self):
         self.serviceThread = threading.Thread(target=self._runService)
