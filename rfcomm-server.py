@@ -114,9 +114,9 @@ class ServiceSwitcher:
                 elif mode == "elevator":
                     if self.currentService.name == "Obstacle Service":
                         self.logService("elevator")
-                        # self.currentService.terminateService()
-                        # self.currentService = ElevatorService(self.blueServer)
-                        # self.currentService.runService()
+                        self.currentService.terminateService()
+                        self.currentService = ElevatorService(self.blueServer)
+                        self.currentService.runService()
                         self.sendSwitchServiceResponse("電梯")
 
                 elif mode == "start":
