@@ -102,12 +102,13 @@ class ServiceSwitcher:
 
                 # Switching service mode
                 mode = data["mode"]
+                print(self.currentService.name)
                 if mode == "obstacle":
                     if self.currentService.name == "Elevator Service":
                         self.logService("obstacle")
-                        # self.currentService.terminateService()
-                        # self.currentService = ObstacleService(self.blueServer)
-                        # self.currentService.runService()
+                        self.currentService.terminateService()
+                        self.currentService = ObstacleService(self.blueServer)
+                        self.currentService.runService()
                         self.sendSwitchServiceResponse("障礙物")
 
                 elif mode == "elevator":
@@ -120,20 +121,19 @@ class ServiceSwitcher:
 
                 elif mode == "start":
                     # check current service
-                    print(self.currentService.name)
                     if self.currentService.name == "Elevator Service":
                         print("terminate elevator")
+                        self.currentService.terminateService()
                         print("Service begin ...")
                         self.logService("obstacle")
-                        # self.currentService.terminateService()
-                        # self.currentService = ObstacleService(self.blueServer)
-                        # self.currentService.runService()
+                        self.currentService = ObstacleService(self.blueServer)
+                        self.currentService.runService()
                     elif self.currentService.serviceThread is None:
                         # if self.currentService.serviceThread is None:
                         print("Service begin ...")
                         self.logService("obstacle")
                         # self.logService("elevator")
-                        # self.currentService.runService()
+                        self.currentService.runService()
                     self.sendSwitchServiceResponse("障礙物")
 
                 else:
