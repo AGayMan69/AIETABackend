@@ -91,7 +91,7 @@ class BluetoothServer:
 class ServiceSwitcher:
     def __init__(self, blueServer):
         self.blueServer = blueServer
-        self.currentService = ObstacleService(self.blueServer)
+        self.currentService = ElevatorService(self.blueServer)
 
     def startReceiveMessage(self):
         terminate = True
@@ -122,16 +122,18 @@ class ServiceSwitcher:
                     self.sendSwitchServiceResponse("障礙物")
                     # check current service
                     print(self.currentService.name)
-                    if self.currentService.name == "Elevator Service":
-                        print("terminate elevator")
+                    # if self.currentService.name == "Elevator Service":
+                    #     print("terminate elevator")
+                    #     print("Service begin ...")
+                    #     self.logService("obstacle")
+                    #     self.currentService.terminateService()
+                    #     self.currentService = ObstacleService(self.blueServer)
+                    #     self.currentService.runService()
+                    # elif self.currentService.serviceThread is None:
+                    if self.currentService.serviceThread is None:
                         print("Service begin ...")
-                        self.logService("obstacle")
-                        self.currentService.terminateService()
-                        self.currentService = ObstacleService(self.blueServer)
-                        self.currentService.runService()
-                    elif self.currentService.serviceThread is None:
-                        print("Service begin ...")
-                        self.logService("obstacle")
+                        # self.logService("obstacle")
+                        self.logService("elevator")
                         self.currentService.runService()
 
                 else:
@@ -227,7 +229,7 @@ if __name__ == '__main__':
             btServer.acceptBluetoothConnection()
             switchManager = ServiceSwitcher(btServer)
             switchManager.startReceiveMessage()
-    except(KeyboardInterrupt):
+    except KeyboardInterrupt:
         btServer.serverSocket.close()
         switchManager.currentService.terminateService()
         print("Stopping the server")
