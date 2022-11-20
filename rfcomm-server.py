@@ -11,6 +11,7 @@ import time
 
 import bluetooth as bt
 import json
+from EscalatorDetector import EscalatorDetector as eDetector
 
 
 class BluetoothServer:
@@ -90,7 +91,7 @@ class BluetoothServer:
 class ServiceSwitcher:
     def __init__(self, blueServer):
         self.blueServer = blueServer
-        self.currentService = ObstacleService()
+        self.currentService = ObstacleService(self.blueServer)
 
     def startReceiveMessage(self):
         terminate = True
@@ -105,7 +106,7 @@ class ServiceSwitcher:
                     if self.currentService.name == "Elevator Service":
                         self.logService("obstacle")
                         self.currentService.terminateService()
-                        self.currentService = ObstacleService()
+                        self.currentService = ObstacleService(self.blueServer)
                         self.currentService.runService()
                         self.sendSwitchServiceResponse("障礙物")
 
@@ -126,7 +127,7 @@ class ServiceSwitcher:
                         print("Service begin ...")
                         self.logService("obstacle")
                         self.currentService.terminateService()
-                        self.currentService = ObstacleService()
+                        self.currentService = ObstacleService(self.blueServer)
                         self.currentService.runService()
                     elif self.currentService.serviceThread is None:
                         print("Service begin ...")
@@ -148,22 +149,24 @@ class ServiceSwitcher:
 
     def sendSwitchServiceResponse(self, mode):
         messageString = f"{mode}模式"
-        dict = {"action": "switch mode", "message": messageString}
-        jsonString = json.dumps(dict, indent=4)
+        responseDict = {"action": "switch mode", "message": messageString}
+        jsonString = json.dumps(responseDict, indent=4)
         response = jsonString.encode("utf-8")
         self.blueServer.sendMessage(response)
-        print(f"Sending {response}")
+        print(f"Sending {jsonString}")
 
 
 class ObstacleService:
-    def __init__(self):
+    def __init__(self, bluetoothServer):
         self.terminate = False
         self.serviceThread = None
         self.name = "Obstacle Service"
+        self.btServer = bluetoothServer
 
     def _runService(self):
         while not self.terminate:
-            obstacleMode()
+            self.obstacleMode()
+            time.sleep(3)
 
     def runService(self):
         self.serviceThread = threading.Thread(target=self._runService)
@@ -171,17 +174,31 @@ class ObstacleService:
 
     def terminateService(self):
         self.terminate = True
+
+    def obstacleMode(self):
+        result = "Turn left"
+        self.sendResponse(result)
+
+    def sendResponse(self, result):
+        responseDict = {"action": "obstacle detection", "message": result}
+        jsonString = json.dumps(responseDict, indent=4)
+        response = jsonString.encode("utf-8")
+        self.btServer.sendMessage(response)
+        print(f"Sending {jsonString}")
 
 
 class ElevatorService:
-    def __init__(self):
+    def __init__(self, bluetoothServer):
         self.terminate = False
         self.serviceThread = None
         self.name = "Elevator Service"
+        self.btServer = bluetoothServer
+        self.ec = eDetector()
 
     def _runService(self):
         while not self.terminate:
-            elevatorMode()
+            self.elevatorMode()
+            time.sleep(5)
 
     def runService(self):
         self.serviceThread = threading.Thread(target=self._runService)
@@ -190,15 +207,16 @@ class ElevatorService:
     def terminateService(self):
         self.terminate = True
 
+    def elevatorMode(self):
+        result = self.ec.startDetection(0)
+        self.sendResponse(result)
 
-def obstacleMode():
-    time.sleep(5)
-    print("Running obstacle mode ...")
-
-
-def elevatorMode():
-    time.sleep(2)
-    print("Running elevator mode ...")
+    def sendResponse(self, result):
+        responseDict = {"action": "elevator direction", "message": result}
+        jsonString = json.dumps(responseDict, indent=4)
+        response = jsonString.encode("utf-8")
+        self.btServer.sendMessage(response)
+        print(f"Sending {jsonString}")
 
 
 if __name__ == '__main__':

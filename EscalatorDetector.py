@@ -46,9 +46,9 @@ class EscalatorDetector:
 
     def getDirection(self,angle):
         if 190 < angle < 350:
-            return 'UP'
+            return '電梯向上'
         elif 170 > angle > 10:
-            return 'DOWN'
+            return '電梯向下'
         else:
             return 'STOP'
 
