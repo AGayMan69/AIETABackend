@@ -105,17 +105,17 @@ class ServiceSwitcher:
                 if mode == "obstacle":
                     if self.currentService.name == "Elevator Service":
                         self.logService("obstacle")
-                        self.currentService.terminateService()
-                        self.currentService = ObstacleService(self.blueServer)
-                        self.currentService.runService()
+                        # self.currentService.terminateService()
+                        # self.currentService = ObstacleService(self.blueServer)
+                        # self.currentService.runService()
                         self.sendSwitchServiceResponse("障礙物")
 
                 elif mode == "elevator":
                     if self.currentService.name == "Obstacle Service":
                         self.logService("elevator")
-                        self.currentService.terminateService()
-                        self.currentService = ElevatorService(self.blueServer)
-                        self.currentService.runService()
+                        # self.currentService.terminateService()
+                        # self.currentService = ElevatorService(self.blueServer)
+                        # self.currentService.runService()
                         self.sendSwitchServiceResponse("電梯")
 
                 elif mode == "start":
@@ -126,20 +126,20 @@ class ServiceSwitcher:
                         print("terminate elevator")
                         print("Service begin ...")
                         self.logService("obstacle")
-                        self.currentService.terminateService()
-                        self.currentService = ObstacleService(self.blueServer)
-                        self.currentService.runService()
+                        # self.currentService.terminateService()
+                        # self.currentService = ObstacleService(self.blueServer)
+                        # self.currentService.runService()
                     elif self.currentService.serviceThread is None:
                         # if self.currentService.serviceThread is None:
                         print("Service begin ...")
                         self.logService("obstacle")
                         # self.logService("elevator")
-                        self.currentService.runService()
+                        # self.currentService.runService()
 
                 else:
                     self.sendSwitchServiceResponse("unknown command")
 
-            except (Exception, bt.BluetoothError, SystemExit):
+            except bt.BluetoothError:
                 print("Closing the client socket")
                 self.blueServer.clientSocket.close()
                 # self.blueServer.serverSocket.close()
@@ -229,7 +229,7 @@ if __name__ == '__main__':
             btServer.acceptBluetoothConnection()
             switchManager = ServiceSwitcher(btServer)
             switchManager.startReceiveMessage()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, SystemExit):
         btServer.serverSocket.close()
         switchManager.currentService.terminateService()
         print("Stopping the server")
