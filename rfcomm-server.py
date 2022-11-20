@@ -136,8 +136,8 @@ class ServiceSwitcher:
                 else:
                     self.sendSwitchServiceResponse("unknown command")
 
-            except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
-                print("Bluetooth server Failed to receive data")
+            except (Exception, bt.BluetoothError, SystemExit):
+                print("Closing the client socket")
                 self.blueServer.clientSocket.close()
                 # self.blueServer.serverSocket.close()
                 terminate = False
@@ -204,7 +204,12 @@ def elevatorMode():
 if __name__ == '__main__':
     btServer = BluetoothServer()
     btServer.startBluetoothServer()
-    while True:
-        btServer.acceptBluetoothConnection()
-        switchManager = ServiceSwitcher(btServer)
-        switchManager.startReceiveMessage()
+    try:
+        while True:
+            btServer.acceptBluetoothConnection()
+            switchManager = ServiceSwitcher(btServer)
+            switchManager.startReceiveMessage()
+    except(KeyboardInterrupt):
+        btServer.serverSocket.close()
+        switchManager.currentService.terminateService()
+        print("Stopping the server")
