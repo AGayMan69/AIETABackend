@@ -63,6 +63,7 @@ class BluetoothServer:
             print("Failed to advertise bluetooth services ...")
 
     def acceptBluetoothConnection(self):
+        print("Waiting for bluetooth connection ...")
         try:
             self.clientSocket, client_info = self.serverSocket.accept()
             print("Accepted bluetooth connection from ", client_info)
@@ -100,6 +101,7 @@ class ServiceSwitcher:
         self.terminate = True
 
     def startReceiveMessage(self):
+        print("Start receiving message")
         while self.terminate:
             try:
                 data = self.blueServer.receiveMessage()
