@@ -133,7 +133,8 @@ class ServiceSwitcher:
 
             except (bt.BluetoothError, TypeError):
                 print("Closing the client socket")
-                self.blueServer.clientSocket.close()
+                if self.blueServer.clientSocket is not None:
+                    self.blueServer.clientSocket.close()
                 # self.blueServer.serverSocket.close()
                 terminate = False
                 if self.currentService is not None:
