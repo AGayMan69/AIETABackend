@@ -114,7 +114,6 @@ class ServiceSwitcher:
                         print("Service begin ...")
                         self.logService("obstacle")
                         self.currentService.runService()
-                    self.sendSwitchServiceResponse("障礙物")
 
                 elif mode == "elevator":
                     if self.currentService.name == "Obstacle Service":
@@ -122,7 +121,6 @@ class ServiceSwitcher:
                         self.currentService.terminateService()
                         self.currentService = ElevatorService(self.blueServer)
                         self.currentService.runService()
-                        self.sendSwitchServiceResponse("電梯")
 
                 # elif mode == "start":
                 #     # check current service
@@ -154,13 +152,15 @@ class ServiceSwitcher:
     def logService(self, serviceName):
         print("Service Switcher: Starting", serviceName, "service ...")
 
-    def sendSwitchServiceResponse(self, mode):
-        messageString = f"{mode}模式"
-        responseDict = {"action": "switch mode", "message": messageString}
-        jsonString = json.dumps(responseDict, indent=4)
-        response = jsonString.encode("utf-8")
-        self.blueServer.sendMessage(response)
-        print(f"Sending {jsonString}")
+
+def sendSwitchServiceResponse(btServer, mode):
+    messageString = f"{mode}模式"
+    responseDict = {"action": "switch mode", "message": messageString}
+    jsonString = json.dumps(responseDict, indent=4)
+    response = jsonString.encode("utf-8")
+    btServer.sendMessage(response)
+    print(f"Sending {jsonString}")
+    time.sleep(0.5)
 
 
 class ObstacleService:
@@ -178,6 +178,7 @@ class ObstacleService:
             time.sleep(10)
 
     def runService(self):
+        sendSwitchServiceResponse(self.btServer, "障礙物")
         self.serviceThread = threading.Thread(target=self._runService)
         self.serviceThread.start()
 
@@ -211,6 +212,7 @@ class ElevatorService:
             time.sleep(5)
 
     def runService(self):
+        sendSwitchServiceResponse(self.btServer, "電梯")
         self.serviceThread = threading.Thread(target=self._runService)
         self.serviceThread.start()
 
