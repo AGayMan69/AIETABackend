@@ -178,7 +178,8 @@ class ObstacleService:
 
     def obstacleMode(self):
         result = self.moveDirection[random.randint(0, 3)]
-        self.sendResponse(result)
+        if not self.terminate:
+            self.sendResponse(result)
 
     def sendResponse(self, result):
         responseDict = {"action": "obstacle detection", "message": result}
@@ -212,7 +213,8 @@ class ElevatorService:
 
     def elevatorMode(self):
         result = self.ec.startDetection(0)
-        self.sendResponse(result)
+        if not self.terminate:
+            self.sendResponse(result)
 
     def sendResponse(self, result):
         responseDict = {"action": "elevator direction", "message": result}
