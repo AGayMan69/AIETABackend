@@ -151,7 +151,7 @@ def sendSwitchServiceResponse(bServer, mode):
     response = jsonString.encode("utf-8")
     bServer.sendMessage(response)
     print(f"Sending {jsonString}")
-    time.sleep(0.5)
+    time.sleep(1.5)
 
 
 class ObstacleService:
