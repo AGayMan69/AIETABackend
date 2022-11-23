@@ -92,7 +92,7 @@ class BluetoothServer:
 class ServiceSwitcher:
     def __init__(self, blueServer):
         self.blueServer = blueServer
-        self.currentService = ObstacleService(self.blueServer)
+        self.currentService = None
 
     def startReceiveMessage(self):
         terminate = True
@@ -105,42 +105,31 @@ class ServiceSwitcher:
                 mode = data["mode"]
                 print(self.currentService.name)
                 if mode == "obstacle":
-                    if self.currentService.name == "Elevator Service":
+                    if self.currentService is None:
+                        print("Service begin ...")
+                        self.logService("obstacle")
+                        self.currentService = ObstacleService(self.blueServer)
+                        self.currentService.runService()
+                    elif self.currentService.name != "Obstacle Service":
                         self.logService("obstacle")
                         self.currentService.terminateService()
                         self.currentService = ObstacleService(self.blueServer)
                         self.currentService.runService()
-                    elif self.currentService.serviceThread is None:
-                        print("Service begin ...")
-                        self.logService("obstacle")
-                        self.currentService.runService()
 
                 elif mode == "elevator":
-                    if self.currentService.name == "Obstacle Service":
+                    if self.currentService.name != "Elevator Service":
                         self.logService("elevator")
                         self.currentService.terminateService()
                         self.currentService = ElevatorService(self.blueServer)
                         self.currentService.runService()
 
-                # elif mode == "start":
-                #     # check current service
-                #     if self.currentService.name == "Elevator Service":
-                #         print("terminate elevator")
-                #         self.currentService.terminateService()
-                #         print("Service begin ...")
-                #         self.logService("obstacle")
-                #         self.currentService = ObstacleService(self.blueServer)
-                #         self.currentService.runService()
-                #     elif self.currentService.serviceThread is None:
-                #         # if self.currentService.serviceThread is None:
-                #         print("Service begin ...")
-                #         self.logService("obstacle")
-                #         # self.logService("elevator")
-                #         self.currentService.runService()
-                #     self.sendSwitchServiceResponse("障礙物")
+                elif mode == "stop":
+                    self.currentService.terminateService()
+                    self.currentService = None
+                    print("Service stop ...")
 
                 else:
-                    self.sendSwitchServiceResponse("unknown command")
+                    sendSwitchServiceResponse(self.blueServer, "unknown command")
 
             except (bt.BluetoothError, TypeError):
                 print("Closing the client socket")
@@ -153,18 +142,17 @@ class ServiceSwitcher:
         print("Service Switcher: Starting", serviceName, "service ...")
 
 
-def sendSwitchServiceResponse(btServer, mode):
+def sendSwitchServiceResponse(bServer, mode):
     messageString = f"{mode}模式"
     responseDict = {"action": "switch mode", "message": messageString}
     jsonString = json.dumps(responseDict, indent=4)
     response = jsonString.encode("utf-8")
-    btServer.sendMessage(response)
+    bServer.sendMessage(response)
     print(f"Sending {jsonString}")
     time.sleep(0.5)
 
 
 class ObstacleService:
-
     def __init__(self, bluetoothServer):
         self.terminate = False
         self.serviceThread = None
