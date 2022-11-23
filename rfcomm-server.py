@@ -136,7 +136,8 @@ class ServiceSwitcher:
                 self.blueServer.clientSocket.close()
                 # self.blueServer.serverSocket.close()
                 terminate = False
-                self.currentService.terminateService()
+                if self.currentService is not None:
+                    self.currentService.terminateService()
 
     def logService(self, serviceName):
         print("Service Switcher: Starting", serviceName, "service ...")
@@ -232,5 +233,6 @@ if __name__ == '__main__':
     except (KeyboardInterrupt, SystemExit):
         btServer.serverSocket.close()
         btServer.clientSocket.close()
-        switchManager.currentService.terminateService()
+        if switchManager.currentService is not None:
+            switchManager.currentService.terminateService()
         print("Stopping the server")
