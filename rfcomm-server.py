@@ -103,7 +103,7 @@ class ServiceSwitcher:
 
                 # Switching service mode
                 mode = data["mode"]
-                print(self.currentService.name)
+                # print(self.currentService.name)
                 if mode == "obstacle":
                     if self.currentService is None:
                         print("Service begin ...")
