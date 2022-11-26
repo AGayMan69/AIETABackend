@@ -159,7 +159,7 @@ class ObstacleService:
         self.terminate = False
         self.serviceThread = None
         self.name = "Obstacle Service"
-        self.moveDirection = ["向左行", "向右行", "向前行", "前方不便同行"]
+        self.moveDirection = ["向左行", "向右行", "向前行", "前方不便前行"]
         self.btServer = bluetoothServer
 
     def _runService(self):
