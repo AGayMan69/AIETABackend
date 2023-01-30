@@ -23,11 +23,12 @@ class EscalatorDetector:
         self.startPointIsSet = False
         self.startAndEndPoint = {'Start': (0, 0), 'End': (0, 0)}
         self.prevPt_arrow = (0, 0)
-        self.setTimeOut(3)
+        self.setTimeOut(1)
         self.isOAKD = self.checkDevices()
 
         if self.isOAKD:
             self.setDepthaiSetting()
+            self.device = dai.Device(self.pipeline, dai.UsbSpeed.HIGH)
 
     # If mxid exist then return true
     def checkDevices(self, mxid='19443010C15BDC1200'):
@@ -89,12 +90,12 @@ class EscalatorDetector:
 
     def identifyDirection(self, angle):
         if 190 < angle < 350:
-            return 'UP'
+            return '電梯向上'
         elif 170 > angle > 10:
-            return 'DOWN'
+            return '電梯向下'
         else:
             # Include stopped
-            return 'Unknown'
+            return '電梯靜止'
 
     def setTimeOut(self, sec):
         self.duration = sec
@@ -110,7 +111,7 @@ class EscalatorDetector:
             self.detectWithOAKD()
         else:
             self.detect()
-        cv2.destroyAllWindows()
+        # cv2.destroyAllWindows()
 
         if not self.errorOccurs:
             # # return self.startAndEndPoint
@@ -161,7 +162,7 @@ class EscalatorDetector:
             self.startAndEndPoint['End'] = (int(nX), int(nY))
             prevGrayFrame = frame
 
-            self.display(frame.copy(), nX, nY)
+            # self.display(frame.copy(), nX, nY)
             self.prevPt_arrow = self.startAndEndPoint['End']
 
             key = cv2.waitKey(1)
@@ -179,59 +180,59 @@ class EscalatorDetector:
         self.startPointIsSet = False
 
         # Connect to device and start pipeline
-        with dai.Device(self.pipeline, dai.UsbSpeed.HIGH) as device:
-            video = device.getOutputQueue(name="video", maxSize=1, blocking=False)
+        # with dai.Device(self.pipeline, dai.UsbSpeed.HIGH) as device:
+        video = self.device.getOutputQueue(name="video", maxSize=1, blocking=False)
 
+        videoIn = video.get()
+        if videoIn is None:
+            # Failed to read the first frame
+            self.errorOccurs = True
+            return
+
+        # Skip the first few second of blurry frame
+        cur = time.time()
+        timeOut = cur + 2
+        while cur < timeOut:
             videoIn = video.get()
-            if videoIn is None:
-                # Failed to read the first frame
-                self.errorOccurs = True
-                return
-
-            # Skip the first few second of blurry frame
+            # cv2.imshow('Frame', videoIn.getCvFrame())
             cur = time.time()
-            timeOut = cur + 2
-            while cur < timeOut:
-                videoIn = video.get()
-                # cv2.imshow('Frame', videoIn.getCvFrame())
-                cur = time.time()
 
-            # prevGrayFrame = self.resizeFrame(videoIn.getCvFrame())
-            prevGrayFrame = videoIn.getCvFrame()
-            self.oldPoints = ([[]])
+        # prevGrayFrame = self.resizeFrame(videoIn.getCvFrame())
+        prevGrayFrame = videoIn.getCvFrame()
+        self.oldPoints = ([[]])
+        curTime = time.time()
+        timeOut = curTime + self.duration
+
+        while True:
+            # ret, frame = cap.read()
+            videoIn = video.get()
+
+            if videoIn is None:
+                break
+            # update duration
             curTime = time.time()
-            timeOut = curTime + self.duration
+            # frame = self.resizeFrame(videoIn.getCvFrame())
+            frame = videoIn.getCvFrame()
 
-            while True:
-                # ret, frame = cap.read()
-                videoIn = video.get()
+            if not self.startPointIsSet:
+                cX = int(frame.shape[1] / 2)
+                cY = int(frame.shape[0] / 2)
+                self.setStartPoint(cX, cY)
+                # for arrow line
+                self.prevPt_arrow = (cX, cY)
 
-                if videoIn is None:
-                    break
-                # update duration
-                curTime = time.time()
-                # frame = self.resizeFrame(videoIn.getCvFrame())
-                frame = videoIn.getCvFrame()
+            # get flow from current frame and prev frame
+            nX, nY = self.calOpticalFlow(prevGrayFrame, frame)
+            self.startAndEndPoint['End'] = (int(nX), int(nY))
+            prevGrayFrame = frame
 
-                if not self.startPointIsSet:
-                    cX = int(frame.shape[1] / 2)
-                    cY = int(frame.shape[0] / 2)
-                    self.setStartPoint(cX, cY)
-                    # for arrow line
-                    self.prevPt_arrow = (cX, cY)
+            # print('nx = ',nX,' ny = ',nY)
+            # self.display(frame.copy(), nX, nY)
+            self.prevPt_arrow = self.startAndEndPoint['End']
 
-                # get flow from current frame and prev frame
-                nX, nY = self.calOpticalFlow(prevGrayFrame, frame)
-                self.startAndEndPoint['End'] = (int(nX), int(nY))
-                prevGrayFrame = frame
-
-                # print('nx = ',nX,' ny = ',nY)
-                self.display(frame.copy(), nX, nY)
-                self.prevPt_arrow = self.startAndEndPoint['End']
-
-                key = cv2.waitKey(1)
-                if key == 27 or curTime > timeOut:
-                    break
+            key = cv2.waitKey(1)
+            if key == 27 or curTime > timeOut:
+                break
 
             # cv2.destroyAllWindows()
             # # return self.startAndEndPoint
@@ -239,7 +240,9 @@ class EscalatorDetector:
             # # print(angles)
             # return self.getDirection(angles)
 
-
-esc = EscalatorDetector()
-result = esc.run()
-print(result)
+# ec = EscalatorDetector()
+# start = time.time()
+# result = ec.run()
+# end = time.time()
+# print("pipeline:", end - start)
+# print(result)

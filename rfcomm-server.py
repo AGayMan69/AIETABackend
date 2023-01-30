@@ -85,6 +85,7 @@ class ServiceSwitcher:
     def __init__(self, blueServer):
         self.blueServer = blueServer
         self.currentService = None
+        self.ec = eDetector()
 
     def startReceiveMessage(self):
         terminate = True
@@ -112,7 +113,7 @@ class ServiceSwitcher:
                     if self.currentService.name != "Elevator Service":
                         self.logService("elevator")
                         self.currentService.terminateService()
-                        self.currentService = ElevatorService(self.blueServer)
+                        self.currentService = ElevatorService(self.blueServer, self.ec)
                         self.currentService.runService()
 
                 elif mode == "stop":
@@ -182,17 +183,17 @@ class ObstacleService:
 
 
 class ElevatorService:
-    def __init__(self, bluetoothServer):
+    def __init__(self, bluetoothServer, ec):
         self.terminate = False
         self.serviceThread = None
         self.name = "Elevator Service"
         self.btServer = bluetoothServer
-        self.ec = eDetector()
+        self.ec = ec
 
     def _runService(self):
         while not self.terminate:
             self.elevatorMode()
-            time.sleep(5)
+            time.sleep(1)
 
     def runService(self):
         sendSwitchServiceResponse(self.btServer, "電梯")
@@ -204,7 +205,7 @@ class ElevatorService:
         self.terminate = True
 
     def elevatorMode(self):
-        result = self.ec.startDetection(0)
+        result = self.ec.run()
         if not self.terminate:
             self.sendResponse(result)
 
