@@ -20,6 +20,7 @@ class EscalatorDetector:
         #     maxLevel=3,
         #     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
         self.errorOccurs = False
+        print(self.errorOccurs)
         self.startPointIsSet = False
         self.startAndEndPoint = {'Start': (0, 0), 'End': (0, 0)}
         self.prevPt_arrow = (0, 0)
@@ -121,7 +122,7 @@ class EscalatorDetector:
         return 'Error'
 
     # RGB camera
-    def detect(self, videoDir=0):
+    def detect(self, videoDir=-1):
         self.startPointIsSet = False
         cap = cv2.VideoCapture(videoDir)
 
@@ -187,6 +188,7 @@ class EscalatorDetector:
         if videoIn is None:
             # Failed to read the first frame
             self.errorOccurs = True
+            print(videoIn)
             return
 
         # Skip the first few second of blurry frame
@@ -206,7 +208,6 @@ class EscalatorDetector:
         while True:
             # ret, frame = cap.read()
             videoIn = video.get()
-
             if videoIn is None:
                 break
             # update duration

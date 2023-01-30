@@ -7,6 +7,9 @@ import json
 from EscalatorDetector import EscalatorDetector as eDetector
 
 
+ec = None
+escalaIsRunning = False
+
 class BluetoothServer:
     def __init__(self, serverSocket=None, clientSocket=None):
         if serverSocket is None:
@@ -59,6 +62,8 @@ class BluetoothServer:
         try:
             self.clientSocket, client_info = self.serverSocket.accept()
             print("Accepted bluetooth connection from ", client_info)
+            global ec
+            ec = eDetector()
         except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
             print("Failed to accept bluetooth connection ...")
 
@@ -78,17 +83,22 @@ class BluetoothServer:
             pass
 
     def sendMessage(self, reply):
-        self.clientSocket.send(reply)
+        try:
+            self.clientSocket.send(reply)
+        except (bt.BluetoothError):
+
+            btServer.serverSocket.close()
+            btServer.clientSocket.close()
 
 
 class ServiceSwitcher:
     def __init__(self, blueServer):
         self.blueServer = blueServer
         self.currentService = None
-        self.ec = eDetector()
 
     def startReceiveMessage(self):
         terminate = True
+        print("re-established connection")
         while terminate:
             try:
                 data = self.blueServer.receiveMessage()
@@ -113,7 +123,7 @@ class ServiceSwitcher:
                     if self.currentService.name != "Elevator Service":
                         self.logService("elevator")
                         self.currentService.terminateService()
-                        self.currentService = ElevatorService(self.blueServer, self.ec)
+                        self.currentService = ElevatorService(self.blueServer)
                         self.currentService.runService()
 
                 elif mode == "stop":
@@ -178,22 +188,25 @@ class ObstacleService:
         responseDict = {"action": "obstacle detection", "message": result}
         jsonString = json.dumps(responseDict, indent=4)
         response = jsonString.encode("utf-8")
-        self.btServer.sendMessage(response)
         print(f"Sending {jsonString}")
+        self.btServer.sendMessage(response)
 
 
 class ElevatorService:
-    def __init__(self, bluetoothServer, ec):
+    def __init__(self, bluetoothServer):
         self.terminate = False
         self.serviceThread = None
         self.name = "Elevator Service"
         self.btServer = bluetoothServer
-        self.ec = ec
 
     def _runService(self):
+        global escalaIsRunning
         while not self.terminate:
-            self.elevatorMode()
-            time.sleep(1)
+            if not escalaIsRunning:
+                escalaIsRunning = True
+                self.elevatorMode()
+                escalaIsRunning = False
+                time.sleep(1)
 
     def runService(self):
         sendSwitchServiceResponse(self.btServer, "電梯")
@@ -205,7 +218,7 @@ class ElevatorService:
         self.terminate = True
 
     def elevatorMode(self):
-        result = self.ec.run()
+        result = ec.run()
         if not self.terminate:
             self.sendResponse(result)
 
