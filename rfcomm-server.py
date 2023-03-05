@@ -4,11 +4,13 @@ import time
 
 import bluetooth as bt
 import json
-from EscalatorDetector import EscalatorDetector as eDetector
+from EscDetect import EscalatorDetector as eDetector
+from ObsDetect import ObsDetect as oDetector
+import depthai as dai
 
-
-ec = None
+device = None
 escalaIsRunning = False
+
 
 class BluetoothServer:
     def __init__(self, serverSocket=None, clientSocket=None):
@@ -62,8 +64,10 @@ class BluetoothServer:
         try:
             self.clientSocket, client_info = self.serverSocket.accept()
             print("Accepted bluetooth connection from ", client_info)
-            global ec
-            ec = eDetector()
+            pipe_manager = PipelineManger()
+            pipe_manager.setup_pipeline()
+            global device
+            device = pipe_manager.create_device()
         except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
             print("Failed to accept bluetooth connection ...")
 
@@ -123,7 +127,7 @@ class ServiceSwitcher:
                     if self.currentService.name != "Elevator Service":
                         self.logService("elevator")
                         self.currentService.terminateService()
-                        self.currentService = ElevatorService(self.blueServer)
+                        self.currentService = EscalatorService(self.blueServer)
                         self.currentService.runService()
 
                 elif mode == "stop":
@@ -158,12 +162,13 @@ def sendSwitchServiceResponse(bServer, mode):
 
 
 class ObstacleService:
-    def __init__(self, bluetoothServer):
+    def __init__(self, bluetooth_server: BluetoothServer, device: dai.Device):
         self.terminate = False
         self.serviceThread = None
         self.name = "Obstacle Service"
-        self.moveDirection = ["向左行", "向右行", "向前行", "前方不便前行"]
-        self.btServer = bluetoothServer
+        self.btServer = bluetooth_server
+        self.device = device
+        self.detector = oDetector(device)
 
     def _runService(self):
         while not self.terminate:
@@ -180,7 +185,7 @@ class ObstacleService:
         self.terminate = True
 
     def obstacleMode(self):
-        result = self.moveDirection[random.randint(0, 3)]
+        result = self.detector.retrieve_message()
         if not self.terminate:
             self.sendResponse(result)
 
@@ -192,12 +197,13 @@ class ObstacleService:
         self.btServer.sendMessage(response)
 
 
-class ElevatorService:
-    def __init__(self, bluetoothServer):
+class EscalatorService:
+    def __init__(self, bluetooth_server: BluetoothServer, dev: dai.Device):
         self.terminate = False
         self.serviceThread = None
         self.name = "Elevator Service"
-        self.btServer = bluetoothServer
+        self.btServer = bluetooth_server
+        self.detector = eDetector(dev)
 
     def _runService(self):
         global escalaIsRunning
@@ -218,9 +224,9 @@ class ElevatorService:
         self.terminate = True
 
     def elevatorMode(self):
-        result = ec.run()
-        if not self.terminate:
-            self.sendResponse(result)
+        status, msg = self.detector.run()
+        if not self.terminate and status:
+            self.sendResponse(msg)
 
     def sendResponse(self, result):
         responseDict = {"action": "elevator direction", "message": result}
@@ -230,10 +236,136 @@ class ElevatorService:
         print(f"Sending {jsonString}")
 
 
+class PipelineManger:
+    def __init__(self):
+        self.pipeline = None
+
+    def setup_pipeline(self):
+        extended_disparity = True
+        # for better accuracy for longer distances
+        subpixel = False
+        # better handling for occulsions:
+        lr_check = False
+        # Create pipeline
+        pipe = dai.Pipeline()
+
+        # nn model
+        nnPath = 'v5nModel_320/best_openvino_2021.4_6shave.blob'
+
+        # Define node
+        monoLeft = pipe.create(dai.node.MonoCamera)
+        monoRight = pipe.create(dai.node.MonoCamera)
+        stereo = pipe.create(dai.node.StereoDepth)
+        camRgb = pipe.create(dai.node.ColorCamera)
+        detectionNetwork = pipe.create(dai.node.YoloDetectionNetwork)
+        xout = pipe.create(dai.node.XLinkOut)
+        xoutRgb = pipe.create(dai.node.XLinkOut)
+        nnOut = pipe.create(dai.node.XLinkOut)
+
+        xout.setStreamName("disparity")
+        xoutRgb.setStreamName("rgb")
+        nnOut.setStreamName("nn")
+
+        # Setting properties for depth camera
+        monoLeft.setBoardSocket(dai.CameraBoardSocket.LEFT)
+        monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
+        monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
+        monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
+
+        # Depth node settings
+        stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
+        # stereo.setRectifyEdgeFillColor(0)
+        stereo.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
+        stereo.setLeftRightCheck(lr_check)
+        stereo.setExtendedDisparity(extended_disparity)
+        stereo.setSubpixel(subpixel)
+
+        config = stereo.initialConfig.get()
+        config.postProcessing.speckleFilter.enable = True
+        config.postProcessing.speckleFilter.speckleRange = 5
+        config.postProcessing.temporalFilter.enable = False
+        config.postProcessing.spatialFilter.enable = False
+        config.postProcessing.spatialFilter.holeFillingRadius = 2
+        config.postProcessing.spatialFilter.numIterations = 1
+        # config.postProcessing.thresholdFilter.minRange = 400
+        # config.postProcessing.thresholdFilter.maxRange = 270
+        config.postProcessing.decimationFilter.decimationFactor = 1
+        stereo.initialConfig.set(config)
+        # depth.initialConfig.setConfidenceThreshold(195)
+        stereo.initialConfig.setLeftRightCheckThreshold(30)
+
+        # camRgb.setPreviewSize(640, 640)
+        camRgb.setPreviewSize(320, 320)
+        camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+        camRgb.setInterleaved(False)
+        camRgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
+        camRgb.setFps(50)
+
+        # Network specific settings
+        detectionNetwork.setConfidenceThreshold(0.6)
+        detectionNetwork.setNumClasses(3)
+        detectionNetwork.setCoordinateSize(4)
+
+        # 320 * 320
+        detectionNetwork.setAnchors([
+            10.0,
+            13.0,
+            16.0,
+            30.0,
+            33.0,
+            23.0,
+            30.0,
+            61.0,
+            62.0,
+            45.0,
+            59.0,
+            119.0,
+            116.0,
+            90.0,
+            156.0,
+            198.0,
+            373.0,
+            326.0
+        ])
+
+        detectionNetwork.setAnchorMasks({
+            "side40": [
+                0,
+                1,
+                2
+            ],
+            "side20": [
+                3,
+                4,
+                5
+            ],
+            "side10": [
+                6,
+                7,
+                8
+            ]
+        })
+
+        detectionNetwork.setIouThreshold(0.5)
+        detectionNetwork.setBlobPath(nnPath)
+        detectionNetwork.input.setBlocking(False)
+
+        # Linking
+        camRgb.preview.link(detectionNetwork.input)
+        detectionNetwork.passthrough.link(xoutRgb.input)
+        detectionNetwork.out.link(nnOut.input)
+        monoLeft.out.link(stereo.left)
+        monoRight.out.link(stereo.right)
+        stereo.disparity.link(xout.input)
+        self.pipeline = pipe
+
+    def create_device(self):
+        return dai.Device(self.pipeline)
+
+
 if __name__ == '__main__':
     btServer = BluetoothServer()
     btServer.startBluetoothServer()
-    # btServer.acceptBluetoothConnection()
     try:
         while True:
             btServer.acceptBluetoothConnection()
