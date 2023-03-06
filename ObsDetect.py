@@ -47,6 +47,7 @@ class ObsDetect:
 
         # if display:
         # cv2.putText(img, str(list_path), (x_loc, y_loc + 80), cv2.FONT_HERSHEY_TRIPLEX, 1, 2, 1)
+        print(str(list_path))
 
     def get_direct_msg(self, index: int) -> str:
         direct_msg = ""
@@ -140,10 +141,9 @@ class ObsDetect:
         direction = []
         while True:
             cur_time = time.time()
-            self.get_guide(list_dir=direction, display=False, queue=queue)
+            self.get_guide(list_dir=direction, display=True, queue=queue)
             if cur_time >= timeout:
                 timeout = cur_time + WAIT_TIME
                 count = Counter(direction)
                 msg = self.get_direct_msg(count.most_common(1)[0][0])
-                direction = []
                 return msg

@@ -129,7 +129,10 @@ class EscalatorDetector:
         for idx, p0 in enumerate(self.startEndCoords['start']):
             p1 = self.startEndCoords['end'][idx]
             totalDeg += self.getAngleBtw2Points(p0, p1)
-        avgDeg = totalDeg / len(self.startEndCoords['start'])
+        length = len(self.startEndCoords['start'])
+        if length == 0:
+            return 0
+        avgDeg = totalDeg / length
         # print('avgAngle: ', int(avgDeg))
         return self.ang2EscDirection(avgDeg)
 
@@ -209,6 +212,15 @@ class EscalatorDetector:
             # Get the start time of the execution time
             self.st = time.time()
 
+            # Skip the blur frame
+            cur_time = time.time()
+            time_out = cur_time + 2
+            while time_out > cur_time:
+                cur_time = time.time()
+                qRgb.get()
+                qDet.get()
+
+            # 3 second for finding the escalator
             cur_time = time.time()
             time_out = cur_time + 3
 
@@ -306,7 +318,7 @@ class EscalatorDetector:
                     frame = gray_scale_frame(frame)
                     self.calOpticalFlow(prev_frame, frame)
                     prev_frame = frame
-                    self.display(frame)
+                    # self.display(frame)
 
                     key = cv2.waitKey(1)
 

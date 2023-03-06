@@ -8,7 +8,6 @@ from EscDetect import EscalatorDetector as eDetector
 from ObsDetect import ObsDetect as oDetector
 import depthai as dai
 
-device = None
 escalaIsRunning = False
 
 
@@ -64,10 +63,7 @@ class BluetoothServer:
         try:
             self.clientSocket, client_info = self.serverSocket.accept()
             print("Accepted bluetooth connection from ", client_info)
-            pipe_manager = PipelineManger()
-            pipe_manager.setup_pipeline()
-            global device
-            device = pipe_manager.create_device()
+
         except (Exception, bt.BluetoothError, SystemExit, KeyboardInterrupt):
             print("Failed to accept bluetooth connection ...")
 
@@ -96,8 +92,9 @@ class BluetoothServer:
 
 
 class ServiceSwitcher:
-    def __init__(self, blueServer):
-        self.blueServer = blueServer
+    def __init__(self, blue_server: BluetoothServer, dev: dai.Device):
+        self.blueServer = blue_server
+        self.dev = dev
         self.currentService = None
 
     def startReceiveMessage(self):
@@ -115,19 +112,19 @@ class ServiceSwitcher:
                     if self.currentService is None:
                         print("Service begin ...")
                         self.logService("obstacle")
-                        self.currentService = ObstacleService(self.blueServer)
+                        self.currentService = ObstacleService(self.blueServer, dev=self.dev)
                         self.currentService.runService()
                     elif self.currentService.name != "Obstacle Service":
                         self.logService("obstacle")
                         self.currentService.terminateService()
-                        self.currentService = ObstacleService(self.blueServer)
+                        self.currentService = ObstacleService(self.blueServer, dev=self.dev)
                         self.currentService.runService()
 
                 elif mode == "elevator":
                     if self.currentService.name != "Elevator Service":
                         self.logService("elevator")
                         self.currentService.terminateService()
-                        self.currentService = EscalatorService(self.blueServer)
+                        self.currentService = EscalatorService(self.blueServer, dev=self.dev)
                         self.currentService.runService()
 
                 elif mode == "stop":
@@ -146,6 +143,9 @@ class ServiceSwitcher:
                 terminate = False
                 if self.currentService is not None:
                     self.currentService.terminateService()
+                pipe_device = pipe_manager.get_device()
+                if pipe_device is not None:
+                    pipe_device.close()
 
     def logService(self, serviceName):
         print("Service Switcher: Starting", serviceName, "service ...")
@@ -162,18 +162,18 @@ def sendSwitchServiceResponse(bServer, mode):
 
 
 class ObstacleService:
-    def __init__(self, bluetooth_server: BluetoothServer, device: dai.Device):
+    def __init__(self, bluetooth_server: BluetoothServer, dev: dai.Device):
         self.terminate = False
         self.serviceThread = None
         self.name = "Obstacle Service"
         self.btServer = bluetooth_server
-        self.device = device
+        self.device = dev
         self.detector = oDetector(device)
 
     def _runService(self):
         while not self.terminate:
             self.obstacleMode()
-            time.sleep(10)
+            time.sleep(1)
 
     def runService(self):
         sendSwitchServiceResponse(self.btServer, "障礙物")
@@ -186,6 +186,7 @@ class ObstacleService:
 
     def obstacleMode(self):
         result = self.detector.retrieve_message()
+        # result = "fuckyou"
         if not self.terminate:
             self.sendResponse(result)
 
@@ -212,7 +213,7 @@ class EscalatorService:
                 escalaIsRunning = True
                 self.elevatorMode()
                 escalaIsRunning = False
-                time.sleep(1)
+                # time.sleep(1)
 
     def runService(self):
         sendSwitchServiceResponse(self.btServer, "電梯")
@@ -225,6 +226,8 @@ class EscalatorService:
 
     def elevatorMode(self):
         status, msg = self.detector.run()
+        # status = True
+        # msg = "escalator"
         if not self.terminate and status:
             self.sendResponse(msg)
 
@@ -239,6 +242,7 @@ class EscalatorService:
 class PipelineManger:
     def __init__(self):
         self.pipeline = None
+        self.device = None
 
     def setup_pipeline(self):
         extended_disparity = True
@@ -360,18 +364,32 @@ class PipelineManger:
         self.pipeline = pipe
 
     def create_device(self):
-        return dai.Device(self.pipeline)
+        self.device = dai.Device(self.pipeline)
+        return self.device
+
+    def get_device(self):
+        return self.device
 
 
 if __name__ == '__main__':
     btServer = BluetoothServer()
+    pipe_manager = PipelineManger()
     btServer.startBluetoothServer()
+    pipe_manager.setup_pipeline()
     try:
         while True:
             btServer.acceptBluetoothConnection()
-            switchManager = ServiceSwitcher(btServer)
+            device = pipe_manager.get_device()
+            if device is not None:
+                device.close()
+            device = pipe_manager.create_device()
+
+            switchManager = ServiceSwitcher(btServer, dev=device)
             switchManager.startReceiveMessage()
     except (KeyboardInterrupt, SystemExit):
+        device = pipe_manager.get_device()
+        if device is not None:
+            device.close()
         btServer.serverSocket.close()
         btServer.clientSocket.close()
         if switchManager.currentService is not None:
