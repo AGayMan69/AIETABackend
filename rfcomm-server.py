@@ -185,7 +185,7 @@ class ObstacleService:
                 msg = self.detector.get_direct_msg(count.most_common(1)[0][0])
                 direction = []
                 self.obstacleMode(msg)
-                time.sleep(1)
+                time.sleep(3)
 
 
     def runService(self):
@@ -198,7 +198,6 @@ class ObstacleService:
         self.terminate = True
 
     def obstacleMode(self, result: str):
-        result = self.detector.retrieve_message()
         if not self.terminate:
             self.sendResponse(result)
 
