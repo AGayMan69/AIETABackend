@@ -7,6 +7,7 @@ import json
 from EscDetect import EscalatorDetector as eDetector
 from ObsDetect import ObsDetect as oDetector
 import depthai as dai
+from collections import Counter
 
 escalaIsRunning = False
 
@@ -171,9 +172,21 @@ class ObstacleService:
         self.detector = oDetector(device)
 
     def _runService(self):
+        WAIT_TIME = 1
+        direction = []
+        cur_time = time.time()
+        timeout = cur_time + WAIT_TIME
         while not self.terminate:
-            self.obstacleMode()
-            time.sleep(1)
+            cur_time = time.time()
+            self.detector.get_guide(list_dir=direction, display=False)
+            if cur_time >= timeout:
+                timeout = cur_time + WAIT_TIME
+                count = Counter(direction)
+                msg = self.detector.get_direct_msg(count.most_common(1)[0][0])
+                direction = []
+                self.obstacleMode(msg)
+                time.sleep(1)
+
 
     def runService(self):
         sendSwitchServiceResponse(self.btServer, "障礙物")
@@ -184,9 +197,8 @@ class ObstacleService:
         print("Terminating", self.name, "...")
         self.terminate = True
 
-    def obstacleMode(self):
+    def obstacleMode(self, result: str):
         result = self.detector.retrieve_message()
-        # result = "fuckyou"
         if not self.terminate:
             self.sendResponse(result)
 

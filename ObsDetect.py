@@ -12,6 +12,7 @@ thickness = 1
 class ObsDetect:
     def __init__(self, device: dai.Device):
         self.device = device
+        self.queue = self.device.getOutputQueue(name="disparity", maxSize=4, blocking=False)
 
     def reverse_number(self, num):
         max_num = 190
@@ -47,7 +48,7 @@ class ObsDetect:
 
         # if display:
         # cv2.putText(img, str(list_path), (x_loc, y_loc + 80), cv2.FONT_HERSHEY_TRIPLEX, 1, 2, 1)
-        print(str(list_path))
+        # print(str(list_path))
 
     def get_direct_msg(self, index: int) -> str:
         direct_msg = ""
@@ -66,11 +67,10 @@ class ObsDetect:
 
         return direct_msg
 
-    def get_guide(self, list_dir: list, display: bool, queue):
+    def get_guide(self, list_dir: list, display: bool):
 
-        # list_dir = []
         threshold_val = 9
-        inDisparity = queue.get()
+        inDisparity = self.queue.get()
         frame = inDisparity.getFrame()
         frame = frame[::, 0:400]
         frame = self.reverse_number(frame)
@@ -93,34 +93,35 @@ class ObsDetect:
             for j in range(int(cols / spac)):
                 if frame[spac * i, spac * j] <= 50:
                     continue
-        if display:
-            cv2.circle(frame, (spac * j, spac * i), 1, (0, 255, 0), 1)
+                # if display:
+                #     cv2.circle(frame, (spac * j, spac * i), 1, (0, 255, 0), 1)
 
-        if frame[spac * i, spac * j] <= 80:
-            f8 += 1
-        if display:
-            cv2.putText(frame, "0", (spac * j, spac * i), cv2.FONT_HERSHEY_PLAIN, 1, (0, 200, 20), thickness)
-        elif frame[spac * i, spac * j] <= 100:
-            f10 += 1
-        if display:
-            cv2.putText(frame, "1", (spac * j, spac * i), cv2.FONT_HERSHEY_PLAIN, 1, (0, 200, 20), thickness)
-        elif frame[spac * i, spac * j] <= 130:
-            f12 = 1
-        if display:
-            cv2.putText(frame, "2", (spac * j, spac * i), cv2.FONT_HERSHEY_PLAIN, 1, (0, 200, 20), thickness)
-            flag120 = self.region_check(spac * j, flag120)
-        # if f8 == 0 and f10 == 0:
-        # showDirect(flag120)
-        elif frame[spac * i, spac * j] <= 170:
-            f14 = 1
-            if display:
-                cv2.putText(frame, "3", (spac * j, spac * i), cv2.FONT_HERSHEY_PLAIN, 1, (0, 200, 20), thickness)
-            flag140 = self.region_check(spac * j, flag140)
-        # if f8 == 0 and f10 == 0 and f12 == 0:
-        # showDirect(flag140)
-        elif frame[spac * i, spac * j] <= 180:
-            if display:
-                cv2.putText(frame, "4", (spac * j, spac * i), cv2.FONT_HERSHEY_PLAIN, 1, (0, 200, 20), thickness)
+                if frame[spac * i, spac * j] <= 80:
+                    f8 += 1
+                    if display:
+                        cv2.putText(frame, "0", (spac * j, spac * i), cv2.FONT_HERSHEY_PLAIN, 1, (0, 200, 20), thickness)
+                elif frame[spac * i, spac * j] <= 100:
+                    f10 += 1
+                    if display:
+                        cv2.putText(frame, "1", (spac * j, spac * i), cv2.FONT_HERSHEY_PLAIN, 1, (0, 200, 20), thickness)
+                elif frame[spac * i, spac * j] <= 130:
+                    f12 = 1
+                    if display:
+                        cv2.putText(frame, "2", (spac * j, spac * i), cv2.FONT_HERSHEY_PLAIN, 1, (0, 200, 20), thickness)
+                        flag120 = self.region_check(spac * j, flag120)
+                # if f8 == 0 and f10 == 0:
+                # showDirect(flag120)
+                elif frame[spac * i, spac * j] <= 170:
+                    f14 = 1
+                    if display:
+                        cv2.putText(frame, "3", (spac * j, spac * i), cv2.FONT_HERSHEY_PLAIN, 1, (0, 200, 20), thickness)
+                    flag140 = self.region_check(spac * j, flag140)
+                # if f8 == 0 and f10 == 0 and f12 == 0:
+                # showDirect(flag140)
+                elif frame[spac * i, spac * j] <= 180:
+                    if display:
+                        cv2.putText(frame, "4", (spac * j, spac * i), cv2.FONT_HERSHEY_PLAIN, 1, (0, 200, 20), thickness)
+
         if f8 >= collision_val:
             list_dir.append(1)
         elif f10 >= collision_val:
@@ -134,14 +135,13 @@ class ObsDetect:
             cv2.imshow("disparity", frame)
 
     def retrieve_message(self):
-        queue = self.device.getOutputQueue(name="disparity", maxSize=4, blocking=False)
         WAIT_TIME = 1
         cur_time = time.time()
         timeout = cur_time + WAIT_TIME
         direction = []
         while True:
             cur_time = time.time()
-            self.get_guide(list_dir=direction, display=True, queue=queue)
+            self.get_guide(list_dir=direction, display=True)
             if cur_time >= timeout:
                 timeout = cur_time + WAIT_TIME
                 count = Counter(direction)
